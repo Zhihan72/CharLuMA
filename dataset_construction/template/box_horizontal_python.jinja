@@ -1,0 +1,77 @@
+import matplotlib.pyplot as plt
+
+tick_labels = {{ tick_labels }}
+q1 = {{ q1 }}
+med = {{ med }}
+q3 = {{ q3 }}
+whislo = {{ whislo }}
+whishi = {{ whishi }}
+colors = {{ colors }}
+
+# Build box stats for ax.bxp
+box_stats = [
+    {
+        'label': tick_labels[i],
+        'q1': q1[i],
+        'med': med[i],
+        'q3': q3[i],
+        'whislo': whislo[i],
+        'whishi': whishi[i],
+        'fliers': []
+    }
+    for i in range(len(tick_labels))
+]
+
+fig, ax = plt.subplots(figsize=({{ width }}, {{ height }}))
+
+# Plot boxplots
+ax.bxp(box_stats, vert=False, showfliers=False, patch_artist=True)
+
+for i, patch in enumerate(ax.patches):
+    patch.set_facecolor(colors[i])
+    {% if alphas %}patch.set_alpha({{ alphas }}){% endif %}
+
+{% if x_label %}
+ax.set_xlabel("{{ x_label }}", fontsize={{ x_font_size }}, fontweight="{{ x_font_weight }}", fontstyle="{{ x_font_style }}")
+{% endif %}
+{% if y_label %}
+ax.set_ylabel("{{ y_label }}", fontsize={{ y_font_size }}, fontweight="{{ y_font_weight }}", fontstyle="{{ y_font_style }}")
+{% endif %}
+{% if title %}
+ax.set_title("{{ title }}", fontsize={{ title_font_size }}, fontweight="{{ title_font_weight }}", fontstyle="{{ title_font_style }}")
+{% endif %}
+
+{% if has_tick %}
+ax.set_xticks({{ sec_ticks }})
+ax.set_xticklabels({{ sec_tick_labels }})
+{% endif %}
+
+{% if has_grid %}
+ax.grid(True)
+{% endif %}
+
+{% if has_panel_box %}
+for spine in ax.spines.values():
+    spine.set_visible(True)
+{% endif %}
+
+ax.set_facecolor("{{ background_color }}")
+
+{% if has_annot %}
+annotations = {{ annotations }}
+for i, label in enumerate(annotations):
+    ax.text(med[i], i + 1, label,
+            ha="{{ annotation_ha }}", va="{{ annotation_va }}",
+            fontweight="{{ annotation_weight }}", fontstyle="{{ annotation_style }}")
+{% endif %}
+
+{% if has_legend %}
+legend_patches = [
+    plt.Rectangle((0, 0), 1, 1, facecolor=colors[i], edgecolor='black')
+    for i in range(len(tick_labels))
+]
+ax.legend(legend_patches, tick_labels, loc="{{ legend_loc }}", ncol={{ legend_ncols }})
+{% endif %}
+
+plt.tight_layout()
+plt.show()

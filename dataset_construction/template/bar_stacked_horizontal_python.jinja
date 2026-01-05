@@ -1,0 +1,76 @@
+import matplotlib.pyplot as plt
+import numpy as np
+
+tick_labels = {{ tick_labels }}
+group_labels = {{ group_labels }}
+values = {{ values }}
+colors = {{ colors }}
+bar_width = {{ bar_width }}
+
+fig, ax = plt.subplots(figsize=({{ width }}, {{ height }}))
+y = np.arange(len(tick_labels))
+left = np.zeros(len(tick_labels))
+
+for i in range(len(group_labels)):
+    bars = ax.barh(
+        y,
+        values[i],
+        left=left,
+        color=colors[i],
+        height=bar_width,
+        label=group_labels[i]
+    )
+    
+    {% if has_annot %}
+    annotations = {{ annotations }}
+    for j, bar in enumerate(bars):
+        label = annotations[i][j]
+        if label is not None:
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_y() + bar.get_height() / 2,
+                label,
+                ha="{{ annotation_ha }}",
+                va="{{ annotation_va }}",
+                fontweight="{{ annotation_weight }}",
+                fontstyle="{{ annotation_style }}"
+            )
+    {% endif %}
+
+    left += np.array(values[i])
+
+ax.set_yticks(y)
+ax.set_yticklabels(tick_labels)
+
+{% if x_label %}
+ax.set_xlabel("{{ x_label }}", fontsize={{ x_font_size }}, fontweight="{{ x_font_weight }}", fontstyle="{{ x_font_style }}")
+{% endif %}
+{% if y_label %}
+ax.set_ylabel("{{ y_label }}", fontsize={{ y_font_size }}, fontweight="{{ y_font_weight }}", fontstyle="{{ y_font_style }}")
+{% endif %}
+{% if title %}
+ax.set_title("{{ title }}", fontsize={{ title_font_size }}, fontweight="{{ title_font_weight }}", fontstyle="{{ title_font_style }}")
+{% endif %}
+
+{% if has_tick %}
+ax.set_xticks({{ sec_ticks }})
+ax.set_xticklabels({{ sec_tick_labels }})
+{% endif %}
+
+{% if has_grid %}
+ax.grid(True)
+{% endif %}
+
+{% if has_panel_box %}
+for spine in ax.spines.values():
+    spine.set_visible(True)
+{% endif %}
+
+ax.set_facecolor("{{ background_color }}")
+
+{% if has_legend %}
+ax.legend(loc="{{ legend_loc }}", ncol={{ legend_ncols }})
+{% endif %}
+
+plt.tight_layout()
+plt.show()

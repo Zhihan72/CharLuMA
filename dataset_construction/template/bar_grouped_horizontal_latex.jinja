@@ -1,0 +1,55 @@
+\documentclass{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepgfplotslibrary{groupplots}
+\usepackage[x11names, rgb]{xcolor}
+
+{{ color_define }}
+
+\begin{document}
+\begin{tikzpicture}
+\begin{axis}[
+    xbar,
+    bar width={{ bar_width }},
+    width={{ width }}in,
+    height={{ height }}in,
+    {% if title %}
+    title={{ title }},
+    title style={font={{ title_font_size }}{{ title_font_face }}, align=center},
+    {% endif %}
+    {% if x_label %}
+    xlabel={{ x_label }},
+    x tick label style={font={{ x_font_size }}{{ x_font_face }}, align=center},
+    {% endif %}
+    {% if y_label %}
+    ylabel={{ y_label }},
+    y tick label style={font={{ y_font_size }}{{ y_font_face }}, align=center},
+    {% endif %}
+    ytick=data,
+    yticklabels={{ tick_labels }},
+    enlarge y limits=0.2,
+    xmin=0,
+    {% if has_grid %}grid=major,{% else %}grid=none,{% endif %}
+    {% if has_panel_box: %}
+    axis lines=box,
+    {% else: %}
+    axis lines=left,
+    {% endif %}
+    {% if has_legend %}
+    legend style={legend pos={{ legend_loc }}, legend columns={{ legend_ncols }}},
+    {% endif %}
+    {% if has_annot: %}
+    nodes near coords,
+    {% endif %}
+    axis background/.style={fill={{ background_color }}}
+]
+
+{{ add_plots }}
+
+{% if has_legend %}
+\legend{ {{ group_labels | join(", ") }} }
+{% endif %}
+
+\end{axis}
+\end{tikzpicture}
+\end{document}

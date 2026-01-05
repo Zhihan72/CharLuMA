@@ -1,0 +1,84 @@
+library(ggplot2)
+
+tick_labels <- {{ tick_labels }}
+group_labels <- {{ group_labels }}
+values <- {{ values }}  # list of numeric vectors
+colors <- {{ colors }}  # list of color vectors
+
+df <- data.frame(
+  Category = factor(rep(tick_labels, times = length(group_labels)), levels = tick_labels),
+  Group = factor(rep(group_labels, each = length(tick_labels)), levels = group_labels),
+  Value = unlist(values),
+  Fill = unlist(colors)
+)
+
+{% if has_annot %}
+df$annotation <- {{ annotations }}  # must be flat, length = nrow(df)
+{% endif %}
+
+p <- ggplot(df, aes(x = Category, y = Value, fill = Group)) +
+  geom_bar(
+    stat = "identity",
+    position = "stack",
+    width = {{ bar_width }},
+    show.legend = {{ "TRUE" if has_legend else "FALSE" }}
+  ) +
+  scale_fill_manual(
+    values = setNames(
+      unlist(colors)[seq(1, length(unlist(colors)), by = length(tick_labels))],
+      group_labels
+    )
+  ) +
+  labs(
+    {% if title %}
+    title = "{{ title }}",
+    {% endif %}
+    {% if x_label %}
+    x = "{{ x_label }}",
+    {% endif %}
+    {% if y_label %}
+    y = "{{ y_label }}",
+    {% endif %}
+    fill = "Group"
+  ) +
+  theme_minimal(base_size = {{ font_size }}) +
+  theme(
+    {% if title %}
+    plot.title = element_text(size = {{ title_font_size }}, hjust = 0.5, face = "{{ title_font_face }}"),
+    {% endif %}
+    {% if x_label %}
+    axis.title.x = element_text(size = {{ x_font_size }}, face = "{{ x_font_face }}"),
+    {% endif %}
+    {% if y_label %}
+    axis.title.y = element_text(size = {{ y_font_size }}, face = "{{ y_font_face }}"),
+    {% endif %}
+    panel.background = element_rect(fill = "{{ background_color }}"),
+    {% if has_grid %}
+    panel.grid.major = element_line(color = "grey"),
+    {% else %}
+    panel.grid = element_blank(),
+    {% endif %}
+    {% if has_panel_box %}
+    panel.border = element_rect(colour = "black", fill = NA, size = 0.5),
+    {% endif %}
+    legend.position = "{{ legend_loc }}"
+  )
+
+{% if has_tick %}
+p <- p + scale_y_continuous(breaks = {{ sec_ticks }}, labels = {{ sec_tick_labels }})
+{% endif %}
+
+{% if has_annot %}
+p <- p + geom_text(
+  aes(label = annotation),
+  position = position_stack(vjust = "{{ annotation_va }}"),
+  hjust = "{{ annotation_ha }}",
+  fontface = "{{ annotation_fontface }}"
+)
+{% endif %}
+
+{% if has_legend %}
+p <- p + guides(fill = guide_legend(ncol = {{ legend_ncols }}))
+{% endif %}
+
+print(p)

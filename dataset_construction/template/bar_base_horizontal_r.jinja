@@ -1,0 +1,82 @@
+library(ggplot2)
+
+tick_labels <- {{ tick_labels }}
+values <- {{ values }}
+colors <- {{ colors }}
+
+data <- data.frame(
+  Category = factor(tick_labels, levels = tick_labels),
+  Value = values,
+  Fill = colors
+)
+
+p <- ggplot(data, aes(x = Category, y = Value, fill = Fill)) +
+  geom_bar(stat = "identity", width = {{ bar_width }}, show.legend = {{ "TRUE" if has_legend else "FALSE" }})
+
+p <- p + coord_flip() + scale_fill_identity()
+
+p <- p +
+  labs(
+    {% if y_label %}
+    x = "{{ y_label }}",
+    {% endif %}
+    {% if x_label %}
+    y = "{{ x_label }}",
+    {% endif %}
+    {% if title %}
+    title = "{{ title }}"
+    {% endif %}
+  ) +
+  theme(
+    {% if title %}
+    plot.title = element_text(
+      hjust = 0.5,
+      size = {{ title_font_size }},
+      face = "{{ title_font_face }}"
+    ),
+    {% endif %}
+    {% if x_label %}
+    axis.title.y = element_text(
+      size = {{ x_font_size }},
+      face = "{{ x_font_face }}"
+    ),
+    {% endif %}
+    {% if y_label %}
+    axis.title.x = element_text(
+      size = {{ y_font_size }},
+      face = "{{ y_font_face }}"
+    ),
+    {% endif %}
+    panel.background = element_rect(fill = "{{ background_color }}"),
+    {% if has_grid %}
+    panel.grid.major = element_line(color = "grey"),
+    {% else %}
+    panel.grid = element_blank(),
+    {% endif %}
+    {% if has_panel_box %}
+    panel.border = element_rect(colour = "black", fill = NA, size = 0.5),
+    {% endif %}
+    {% if has_legend %}
+    legend.position = "{{ legend_loc }}",
+    {% endif %}
+  )
+
+{% if has_tick %}
+p <- p + scale_y_continuous(breaks = {{ sec_ticks }}, labels = {{ sec_tick_labels }})
+{% endif %}
+
+{% if has_annot %}
+annotations <- {{ annotations }}
+p <- p + geom_text(
+  aes(label = annotations),
+  vjust = "{{ annotation_ha }}",
+  hjust = "{{ annotation_va }}",
+  fontface = "{{ annotation_fontface }}"
+)
+{% endif %}
+
+{% if has_legend %}
+p <- p + guides(fill = guide_legend(ncol = {{ legend_ncols }}))
+{% endif %}
+
+print(p)

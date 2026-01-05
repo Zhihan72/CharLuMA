@@ -1,0 +1,70 @@
+import matplotlib.pyplot as plt
+import numpy as np
+
+tick_labels = {{ tick_labels }}
+group_labels = {{ group_labels }}
+values = {{ values }}
+colors = {{ colors }}
+bar_width = {{ bar_width }}
+
+n_groups = len(group_labels)
+y = np.arange(len(tick_labels))
+group_height = bar_width / n_groups
+
+fig, ax = plt.subplots(figsize=({{ width }}, {{ height }}))
+for i in range(n_groups):
+    ax.barh(y + i * group_height, values[i], height=group_height, label=group_labels[i], color=colors[i])
+
+ax.set_yticks(y + (bar_width - group_height)/2)
+ax.set_yticklabels(tick_labels)
+
+{% if x_label %}
+ax.set_xlabel("{{ x_label }}", fontsize={{ x_font_size }}, fontweight="{{ x_font_weight }}", fontstyle="{{ x_font_style }}")
+{% endif %}
+{% if y_label %}
+ax.set_ylabel("{{ y_label }}", fontsize={{ y_font_size }}, fontweight="{{ y_font_weight }}", fontstyle="{{ y_font_style }}")
+{% endif %}
+{% if title %}
+ax.set_title("{{ title }}", fontsize={{ title_font_size }}, fontweight="{{ title_font_weight }}", fontstyle="{{ title_font_style }}")
+{% endif %}
+
+{% if has_tick %}
+ax.set_xticks({{ sec_ticks }})
+ax.set_xticklabels({{ sec_tick_labels }})
+{% endif %}
+
+{% if has_grid %}
+ax.grid(True)
+{% endif %}
+
+{% if has_panel_box %}
+for spine in ax.spines.values():
+    spine.set_visible(True)
+{% endif %}
+
+ax.set_facecolor("{{ background_color }}")
+
+{% if has_annot %}
+annotations = {{ annotations }}
+for i in range(n_groups):
+    for j in range(len(tick_labels)):
+        value = values[i][j]
+        label = annotations[i][j]
+        if label is not None:
+            ax.text(
+                value,
+                y[j] + i * group_height + group_height / 2,
+                label,
+                ha="{{ annotation_ha }}",
+                va="{{ annotation_va }}",
+                fontweight="{{ annotation_weight }}",
+                fontstyle="{{ annotation_style }}"
+            )
+{% endif %}
+
+{% if legend %}
+ax.legend(loc="{{ legend_loc }}", ncol={{ legend_ncols }})
+{% endif %}
+
+plt.tight_layout()
+plt.show()

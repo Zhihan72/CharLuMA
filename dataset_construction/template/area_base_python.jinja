@@ -1,0 +1,54 @@
+import matplotlib.pyplot as plt
+
+x_values = {{ x_values }}
+y_values = {{ y_values }}
+
+fig, ax = plt.subplots(figsize=({{ width }}, {{ height }}))
+
+ax.fill_between(
+    x_values,
+    y_values,
+    color="{{ colors }}",
+    alpha={{ alphas }}
+)
+
+{% if x_label %}
+ax.set_xlabel("{{ x_label }}", fontsize={{ x_font_size }}, fontweight="{{ x_font_weight }}", fontstyle="{{ x_font_style }}")
+{% endif %}
+{% if y_label %}
+ax.set_ylabel("{{ y_label }}", fontsize={{ y_font_size }}, fontweight="{{ y_font_weight }}", fontstyle="{{ y_font_style }}")
+{% endif %}
+{% if title %}
+ax.set_title("{{ title }}", fontsize={{ title_font_size }}, fontweight="{{ title_font_weight }}", fontstyle="{{ title_font_style }}")
+{% endif %}
+
+{% if has_tick %}
+ax.set_yticks({{ sec_ticks }})
+ax.set_yticklabels({{ sec_tick_labels }})
+{% endif %}
+
+{% if has_x_str %}
+ax.set_xticks({{ x_values }})
+ax.set_xticklabels({{ tick_labels }})
+{% endif %}
+
+{% if has_grid %}
+ax.grid(True)
+{% endif %}
+
+{% if has_panel_box %}
+for spine in ax.spines.values():
+    spine.set_visible(True)
+{% else %}
+for spine in ax.spines.values():
+    spine.set_visible(False)
+{% endif %}
+
+ax.set_facecolor("{{ background_color }}")
+
+{% if has_legend %}
+ax.legend(loc="{{ legend_loc }}", ncol={{ legend_ncols }})
+{% endif %}
+
+plt.tight_layout()
+plt.show()

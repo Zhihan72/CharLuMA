@@ -1,0 +1,65 @@
+library(ggplot2)
+
+group_labels <- {{ group_labels }}
+x_values <- {{ x_values }}
+y_values <- {{ y_values }}
+colors <- {{ colors }}
+
+n_point <- length(x_values)
+n_group <- length(group_labels)
+
+df <- data.frame(
+  x = rep(x_values, times = n_group),
+  y = unlist(y_values),
+  group = factor(rep(group_labels, each = n_point), levels = group_labels),
+  fill = rep(colors, each = n_point)
+)
+
+p <- ggplot(df, aes(x = x, y = y, group = group, fill = group)) +
+  geom_area(alpha = {{ alphas }}, position = "stack") +
+  scale_fill_manual(values = setNames(colors, group_labels)) +
+  theme_minimal()
+
+{% if x_label %}
+p <- p + xlab("{{ x_label }}")
+{% endif %}
+{% if y_label %}
+p <- p + ylab("{{ y_label }}")
+{% endif %}
+{% if title %}
+p <- p + ggtitle("{{ title }}")
+{% endif %}
+
+{% if has_grid %}
+p <- p + theme(panel.grid.major = element_line(), panel.grid.minor = element_line())
+{% else %}
+p <- p + theme(panel.grid = element_blank())
+{% endif %}
+{% if has_panel_box %}
+p <- p + theme(panel.border = element_rect(color = "black", fill = NA, linewidth = 1))
+{% endif %}
+
+p <- p + theme(
+  plot.background = element_rect(fill = "{{ background_color }}", linewidth = NA),
+  panel.background = element_rect(fill = "{{ background_color }}", linewidth = NA)
+)
+
+{% if has_legend %}
+p <- p + theme(legend.position = "{{ legend_loc }}") +
+  guides(
+    color = guide_legend(ncol = {{ legend_ncols }}),
+    linetype = guide_legend(ncol = {{ legend_ncols }})
+  )
+{% else %}
+p <- p + theme(legend.position = "none")
+{% endif %}
+
+{% if has_tick %}
+p <- p + scale_y_continuous(breaks = seq({{ sec_limit_low }}, {{ sec_limit_high }}, by = {{ sec_gap }}), limits = c({{ sec_limit_low }}, {{ sec_limit_high }}))
+{% endif %}
+
+{% if has_x_str %}
+p <- p + scale_x_continuous(breaks = x_values, labels = {{ tick_labels }})
+{% endif %}
+
+print(p)

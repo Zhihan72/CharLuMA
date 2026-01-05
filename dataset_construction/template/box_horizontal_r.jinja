@@ -1,0 +1,73 @@
+library(ggplot2)
+
+group_labels <- {{ tick_labels }}
+n <- length(group_labels)
+data <- data.frame(
+  group = factor(seq_len(n), levels = seq_len(n), labels = group_labels),
+  ymin = {{ whislo }},
+  lower = {{ q1 }},
+  middle = {{ med }},
+  upper = {{ q3 }},
+  ymax = {{ whishi }},
+  xmin = {{ xmin }},
+  xmax = {{ xmax }},
+  fill = {{ colors }}
+)
+
+# Vertical boxplot with coord_flip to achieve horizontal effect
+p <- ggplot(data, aes(x = group, fill = fill)) +
+  geom_boxplot(
+    aes(
+      ymin = ymin,
+      lower = lower,
+      middle = middle,
+      upper = upper,
+      ymax = ymax
+    ),
+    stat = "identity",
+    width = {{ box_width }},
+    {% if alphas %}alpha = {{ alphas }},{% endif %}
+    position = position_dodge(width = 0.75),
+    show.legend = {{ "TRUE" if has_legend else "FALSE" }},
+    outlier.shape = NA
+  ) +
+  scale_fill_identity() +
+  coord_flip()
+
+# Labels and theme
+p <- p +
+  labs(
+    {% if x_label %} x = "{{ x_label }}", {% endif %}
+    {% if y_label %} y = "{{ y_label }}", {% endif %}
+    {% if title %} title = "{{ title }}" {% endif %}
+  ) +
+  theme(
+    {% if title %} plot.title = element_text(hjust = 0.5, size = {{ title_font_size }}, face = "{{ title_font_face }}"), {% endif %}
+    {% if x_label %} axis.title.x = element_text(size = {{ x_font_size }}, face = "{{ x_font_face }}"), {% endif %}
+    {% if y_label %} axis.title.y = element_text(size = {{ y_font_size }}, face = "{{ y_font_face }}"), {% endif %}
+    panel.background = element_rect(fill = "{{ background_color }}"),
+    {% if has_grid %} panel.grid.major = element_line(color = "grey"), {% else %} panel.grid = element_blank(), {% endif %}
+    {% if has_panel_box %} panel.border = element_rect(colour = "black", fill = NA, size = 0.5), {% endif %}
+    {% if has_legend %} legend.position = "{{ legend_loc }}", {% endif %}
+  )
+
+# X-axis becomes vertical → ticks still use x scale
+{% if has_tick %}
+p <- p + scale_y_continuous(breaks = {{ sec_ticks }}, labels = {{ sec_tick_labels }})
+{% endif %}
+
+{% if has_annot %}
+annotations <- {{ annotations }}
+p <- p + geom_text(
+  aes(label = annotations),
+  vjust = "{{ annotation_va }}",
+  hjust = "{{ annotation_ha }}",
+  fontface = "{{ annotation_fontface }}"
+)
+{% endif %}
+
+{% if has_legend %}
+p <- p + guides(fill = guide_legend(ncol = {{ legend_ncols }}))
+{% endif %}
+
+print(p)

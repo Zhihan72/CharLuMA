@@ -1,0 +1,43 @@
+library(ggplot2)
+
+df <- data.frame(
+  x = {{ x_values }},
+  y = {{ y_values }}
+)
+
+p <- ggplot(df, aes(x = x, y = y)) +
+  geom_area(fill  = "{{ colors }}", alpha = {{ alphas }})
+
+{% if x_label %}
+p <- p + xlab("{{ x_label }}")
+{% endif %}
+{% if y_label %}
+p <- p + ylab("{{ y_label }}")
+{% endif %}
+{% if title %}
+p <- p + ggtitle("{{ title }}")
+{% endif %}
+
+{% if has_grid %}
+p <- p + theme(panel.grid.major = element_line(color = "grey80"), panel.grid.minor = element_line(color = "grey80"))
+{% else %}
+p <- p + theme(panel.grid = element_blank())
+{% endif %}
+{% if has_panel_box %}
+p <- p + theme(panel.border = element_rect(color = "black", fill = NA))
+{% endif %}
+
+p <- p + theme(
+  plot.background = element_rect(fill = "{{ background_color }}"),
+  panel.background = element_rect(fill = "{{ background_color }}")
+)
+
+{% if has_tick %}
+p <- p + scale_y_continuous(breaks = seq({{ sec_limit_low }}, {{ sec_limit_high }}, by = {{ sec_gap }}), limits = c({{ sec_limit_low }}, {{ sec_limit_high }}))
+{% endif %}
+
+{% if has_x_str %}
+p <- p + scale_x_continuous(breaks = df$x, labels = {{ tick_labels }})
+{% endif %}
+
+print(p)

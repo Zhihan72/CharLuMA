@@ -1,0 +1,126 @@
+library(ggplot2)
+
+group_labels <- {{ group_labels }}
+tick_labels <- {{ tick_labels }}
+n_group <- length(group_labels)
+n_subgroup <- length(tick_labels)
+
+# Flatten the 2D input values
+data <- data.frame(
+  tick = factor(rep(tick_labels, times = n_group), levels = tick_labels),
+  group = factor(rep(group_labels, each = n_subgroup), levels = group_labels),
+  ymin = unlist({{ whislo }}),
+  lower = unlist({{ q1 }}),
+  middle = unlist({{ med }}),
+  upper = unlist({{ q3 }}),
+  ymax = unlist({{ whishi }}),
+  xmin = unlist({{ xmin }}),
+  xmax = unlist({{ xmax }}),
+  fill = rep(unlist({{ colors }}), each = n_subgroup)
+)
+
+# Base plot with grouped box stats
+p <- ggplot(data, aes(x = tick, fill = group)) +
+  geom_boxplot(
+    aes(
+      ymin = ymin,
+      lower = lower,
+      middle = middle,
+      upper = upper,
+      ymax = ymax
+    ),
+    stat = "identity",
+    width = {{ box_width }},
+    {% if alphas %}alpha = {{ alphas }},{% endif %}
+    position = position_dodge2(preserve = "single", width = 0.75),
+    outlier.shape = NA,
+    show.legend = {{ "TRUE" if has_legend else "FALSE" }}
+  ) +
+  scale_fill_manual(values = setNames(unlist({{ colors }}), group_labels)) +
+  coord_flip()
+
+# Add optional dot points
+dots_df <- data.frame(
+  x = unlist({{ x_dot }}),
+  y = unlist({{ y_dot }}),
+  color = unlist({{ dot_color }}),
+  shape = unlist({{ dot_shape }}),
+  size = unlist({{ dot_size }})
+)
+
+p <- p + geom_point(
+  data = dots_df,
+  aes(x = x, y = y, color = color, shape = shape, size = size, alpha = {{ dot_alpha }}),
+  inherit.aes = FALSE
+) +
+scale_color_identity()
+
+# Add labels and theme
+p <- p +
+  labs(
+    {% if x_label %}
+    x = "{{ x_label }}",
+    {% endif %}
+    {% if y_label %}
+    y = "{{ y_label }}",
+    {% endif %}
+    {% if title %}
+    title = "{{ title }}"
+    {% endif %}
+  ) +
+  theme(
+    {% if title %}
+    plot.title = element_text(
+      hjust = 0.5,
+      size = {{ title_font_size }},
+      face = "{{ title_font_face }}"
+    ),
+    {% endif %}
+    {% if x_label %}
+    axis.title.x = element_text(
+      size = {{ x_font_size }},
+      face = "{{ x_font_face }}"
+    ),
+    {% endif %}
+    {% if y_label %}
+    axis.title.y = element_text(
+      size = {{ y_font_size }},
+      face = "{{ y_font_face }}"
+    ),
+    {% endif %}
+    panel.background = element_rect(fill = "{{ background_color }}"),
+    {% if has_grid %}
+    panel.grid.major = element_line(color = "grey"),
+    {% else %}
+    panel.grid = element_blank(),
+    {% endif %}
+    {% if has_panel_box %}
+    panel.border = element_rect(colour = "black", fill = NA, size = 0.5),
+    {% endif %}
+    {% if has_legend %}
+    legend.position = "{{ legend_loc }}",
+    {% endif %}
+  )
+
+# Optional Y ticks
+{% if has_tick %}
+p <- p + scale_y_continuous(breaks = {{ sec_ticks }}, labels = {{ sec_tick_labels }})
+{% endif %}
+
+# Optional annotations
+{% if has_annot %}
+annotations <- {{ annotations }}
+p <- p + geom_text(
+  aes(label = annotations),
+  vjust = "{{ annotation_va }}",
+  hjust = "{{ annotation_ha }}",
+  fontface = "{{ annotation_fontface }}"
+)
+{% endif %}
+
+# Optional legend styling
+{% if has_legend %}
+p <- p + guides(fill = guide_legend(ncol = {{ legend_ncols }}))
+{% endif %}
+
+print(p)

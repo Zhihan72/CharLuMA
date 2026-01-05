@@ -1,0 +1,75 @@
+\documentclass{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage[x11names, rgb]{xcolor}
+\usepgfplotslibrary{statistics}
+
+{{ color_define }}
+
+\begin{document}
+\begin{tikzpicture}
+\begin{axis}[
+    width={{ width }}in,
+    height={{ height }}in,
+    boxplot/draw direction=y,
+    boxplot/box extend={{ box_width }},
+    {% if title %}
+    title={{ title }},
+    title style={font={{ title_font_size }}{{ title_font_face }}},
+    {% endif %}
+    {% if x_label %}
+    xlabel={{ x_label }},
+    x tick label style={font={{ x_font_size }}{{ x_font_face }}, align=center},
+    {% endif %}
+    {% if y_label %}
+    ylabel={{ y_label }},
+    y tick label style={font={{ y_font_size }}{{ y_font_face }}, align=center},
+    {% endif %}
+    xtick={{ box_pos }},
+    xticklabels={{ tick_labels_str }},
+    {% if has_tick %}
+    ytick={{ sec_ticks }},
+    yticklabels={{ sec_tick_labels }},
+    {% endif %}
+    enlarge x limits=0.2,
+    {% if has_grid %}
+    grid=major,
+    {% else %}
+    grid=none,
+    {% endif %}
+    {% if has_panel_box %}
+    axis lines=box,
+    {% else %}
+    axis lines=left,
+    {% endif %}
+    {% if has_legend %}
+    legend style={legend pos={{ legend_loc }}, legend columns={{ legend_ncols }}},
+    {% endif %}
+    {% if has_annot: %}
+    nodes near coords,
+    {% endif %}
+    axis background/.style={fill={{ background_color }}}
+]
+
+{% for j in range(tick_labels | length) %}
+{% for i in range(group_labels | length) %}
+\addplot+[
+  boxplot prepared,
+  fill={{ colors[i] }},
+  draw=black,
+  {% if alphas %}fill opacity={{ alphas }},{% endif %}
+  boxplot prepared={
+    lower whisker={{ whislo[i][j] }},
+    lower quartile={{ q1[i][j] }},
+    median={{ med[i][j] }},
+    upper quartile={{ q3[i][j] }},
+    upper whisker={{ whishi[i][j] }}
+  }
+] coordinates {};
+
+{% endfor %}
+{% endfor %}
+
+\end{axis}
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,103 @@
+import matplotlib.pyplot as plt
+
+tick_labels = {{ tick_labels }}
+group_labels = {{ group_labels }}
+q1 = {{ q1 }}
+med = {{ med }}
+q3 = {{ q3 }}
+whislo = {{ whislo }}
+whishi = {{ whishi }}
+colors = {{ colors }}
+
+n_group = len(tick_labels)
+n_subgroup = len(group_labels)
+group_height = 0.8
+box_height = group_height / n_subgroup
+spacing = 1.0
+
+# Compute positions
+positions = []
+box_stats = []
+
+for i in range(n_group):
+    for j in range(n_subgroup):
+        y_pos = i * spacing + j * box_height
+        positions.append(y_pos)
+        box_stats.append({
+            'label': '',  # no label here to avoid clutter
+            'q1': q1[j][i],
+            'med': med[j][i],
+            'q3': q3[j][i],
+            'whislo': whislo[j][i],
+            'whishi': whishi[j][i],
+            'fliers': []
+        })
+
+fig, ax = plt.subplots(figsize=({{ width }}, {{ height }}))
+
+# Plot horizontal boxplot
+ax.bxp(box_stats, showfliers=False, patch_artist=True, positions=positions, widths=box_height * 0.9, vert=False)
+
+for i, patch in enumerate(ax.patches):
+    color = colors[i % n_subgroup]
+    patch.set_facecolor(color)
+    {% if alphas %}patch.set_alpha({{ alphas }}){% endif %}
+
+# Plot overlaid dots
+x_dot = {{ y_dot }}
+y_dot = {{ x_dot }}
+dot_color = {{ dot_color }}
+dot_shape = {{ dot_shape }}
+dot_size = {{ dot_size }}
+for i in range(len(x_dot)):
+    ax.scatter(x_dot[i], y_dot[i], color=dot_color[i], marker=dot_shape[i], s=dot_size[i], alpha={{ dot_alpha }}, zorder=3)
+    
+# Set y-ticks at group centers
+group_centers = [(i + 0.5 * (n_subgroup - 1) * box_height) for i in range(n_group)]
+ax.set_yticks(group_centers)
+ax.set_yticklabels(tick_labels)
+
+{% if x_label %}
+ax.set_xlabel("{{ x_label }}", fontsize={{ x_font_size }}, fontweight="{{ x_font_weight }}", fontstyle="{{ x_font_style }}")
+{% endif %}
+{% if y_label %}
+ax.set_ylabel("{{ y_label }}", fontsize={{ y_font_size }}, fontweight="{{ y_font_weight }}", fontstyle="{{ y_font_style }}")
+{% endif %}
+{% if title %}
+ax.set_title("{{ title }}", fontsize={{ title_font_size }}, fontweight="{{ title_font_weight }}", fontstyle="{{ title_font_style }}")
+{% endif %}
+
+{% if has_tick %}
+ax.set_xticks({{ sec_ticks }})
+ax.set_xticklabels({{ sec_tick_labels }})
+{% endif %}
+
+{% if has_grid %}
+ax.grid(True)
+{% endif %}
+
+{% if has_panel_box %}
+for spine in ax.spines.values():
+    spine.set_visible(True)
+{% endif %}
+
+ax.set_facecolor("{{ background_color }}")
+
+{% if has_annot %}
+annotations = {{ annotations }}
+for i, label in enumerate(annotations):
+    ax.text(med[i % n_subgroup][i // n_subgroup], positions[i], label,
+            va="{{ annotation_va }}", ha="{{ annotation_ha }}",
+            fontweight="{{ annotation_weight }}", fontstyle="{{ annotation_style }}")
+{% endif %}
+
+{% if has_legend %}
+legend_patches = [
+    plt.Rectangle((0, 0), 1, 1, facecolor=colors[j], edgecolor='black')
+    for j in range(n_subgroup)
+]
+ax.legend(legend_patches, group_labels, loc="{{ legend_loc }}", ncol={{ legend_ncols }})
+{% endif %}
+
+plt.tight_layout()
+plt.show()

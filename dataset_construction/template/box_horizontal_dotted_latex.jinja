@@ -1,0 +1,86 @@
+\documentclass{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage[x11names, rgb]{xcolor}
+\usepgfplotslibrary{statistics}
+
+{{ color_define }}
+
+\begin{document}
+\begin{tikzpicture}
+\begin{axis}[
+    width={{ width }}in,
+    height={{ height }}in,
+    boxplot/draw direction=x,
+    boxplot/box extend={{ box_width }},
+    {% if title %}
+    title={{ title }},
+    title style={font={{ title_font_size }}{{ title_font_face }}},
+    {% endif %}
+    {% if x_label %}
+    ylabel={{ x_label }},
+    y tick label style={font={{ x_font_size }}{{ x_font_face }}, align=center},
+    {% endif %}
+    {% if y_label %}
+    xlabel={{ y_label }},
+    x tick label style={font={{ y_font_size }}{{ y_font_face }}, align=center},
+    {% endif %}
+    ytick={{ box_pos }},
+    yticklabels={{ tick_labels_str }},
+    {% if has_tick %}
+    xtick={{ sec_ticks }},
+    xticklabels={{ sec_tick_labels }},
+    {% endif %}
+    enlarge y limits=0.2,
+    {% if has_grid %}
+    grid=major,
+    {% else %}
+    grid=none,
+    {% endif %}
+    {% if has_panel_box %}
+    axis lines=box,
+    {% else %}
+    axis lines=left,
+    {% endif %}
+    {% if has_legend %}
+    legend style={legend pos={{ legend_loc }}, legend columns={{ legend_ncols }}},
+    {% endif %}
+    {% if has_annot: %}
+    nodes near coords,
+    {% endif %}
+    axis background/.style={fill={{ background_color }}}
+]
+
+{% for i in range(0, whislo|length): %}
+\addplot+[
+  boxplot prepared,
+  fill={{ colors[i] }},
+  draw=black,
+  {% if alphas %}fill opacity={{ alphas }},{% endif %}
+  boxplot prepared={
+    lower whisker={{ whislo[i] }},
+    lower quartile={{ q1[i] }},
+    median={{ med[i] }},
+    upper quartile={{ q3[i] }},
+    upper whisker={{ whishi[i] }}
+  }
+] coordinates {};
+{% endfor %}
+
+{% for i in range(x_dot | length) %}
+\addplot+[
+  only marks,
+  mark={{ dot_shape[i] }},
+  mark options={fill={{ dot_color[i] }}, draw=none},
+  mark size={{ dot_size[i] }},
+  opacity={{ dot_alpha }}
+] coordinates {
+  {% for j in range(x_dot[i] | length) %}
+  ({{ y_dot[i][j] }}, {{ x_dot[i][j] }})
+  {% endfor %}
+};
+{% endfor %}
+
+\end{axis}
+\end{tikzpicture}
+\end{document}

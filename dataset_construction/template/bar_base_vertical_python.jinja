@@ -1,0 +1,49 @@
+import matplotlib.pyplot as plt
+
+tick_labels = {{ tick_labels }}
+values = {{ values }}
+colors = {{ colors }}
+bar_width = {{ bar_width }}
+
+fig, ax = plt.subplots(figsize=({{ width }}, {{ height }}))
+bars = ax.bar(tick_labels, values, color=colors, width=bar_width)
+
+{% if x_label %}
+ax.set_xlabel("{{ x_label }}", fontsize={{ x_font_size }}, fontweight="{{ x_font_weight }}", fontstyle="{{ x_font_style }}")
+{% endif %}
+{% if y_label %}
+ax.set_ylabel("{{ y_label }}", fontsize={{ y_font_size }}, fontweight="{{ y_font_weight }}", fontstyle="{{ y_font_style }}")
+{% endif %}
+{% if title %}
+ax.set_title("{{ title }}", fontsize={{ title_font_size }}, fontweight="{{ title_font_weight }}", fontstyle="{{ title_font_style }}")
+{% endif %}
+
+{% if has_tick %}
+ax.set_yticks({{ sec_ticks }})
+ax.set_yticklabels({{ sec_tick_labels }})
+{% endif %}
+
+{% if has_grid %}
+ax.grid(True)
+{% endif %}
+
+{% if has_panel_box %}
+for spine in ax.spines.values():
+    spine.set_visible(True)
+{% endif %}
+
+ax.set_facecolor("{{ background_color }}")
+
+{% if has_annot %}
+annotations = {{ annotations }}
+for i in range(len(bars)):
+    ax.text(bars[i].get_x() + bars[i].get_width() / 2, bars[i].get_height(),
+             annotations[i], ha="{{ annotation_ha }}", va="{{ annotation_va }}", fontweight="{{ annotation_weight }}", fontstyle="{{ annotation_style }}")
+{% endif %}
+
+{% if has_legend %}
+ax.legend(loc="{{ legend_loc }}", ncol={{ legend_ncols }})
+{% endif %}
+
+plt.tight_layout()
+plt.show()
