@@ -12,7 +12,7 @@ deepspeed  --include localhost:0,1,2,3,4,5,6,7 llava/train/train_mem_shareprivat
     --vision_tower ./checkpoints/siglip-so400m-patch14-384 \
     --tune_mm_mlp_adapter True \
     --pretrain_mm_mlp_adapter ./checkpoints/ckpt_pretrain_ChartMoEAlign_json/mm_projector.bin \
-    --mm_projector_type "mlp_luma" \
+    --mm_projector_type "mlp_murmoe" \
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
