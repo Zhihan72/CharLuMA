@@ -28,6 +28,7 @@ To replicate the automatic annotation pipeline used to generate Chart2NCode, run
 ```
 bash dataset_construction/main.sh
 ```
+Note: This release currently includes the templates and template-filling scripts for area, bar, and box charts.
 
 We provide a random subset of the Chart2NCode dataset in `dataset_construction/sample_Chart2NCode/`. Due to storage constraints and the strict prohibition on external links during the review process, the full dataset cannot be hosted in this repository.
 
