@@ -1,4 +1,4 @@
-# Multi-View Script Alignment for Universal Chart-to-Code Generation
+# Aligned Multi-View Scripts for Universal Chart-to-Code Generation
 
 This repository is provided for the **double-blind reviewing process of ARR 2026 January Cycle**.
 
