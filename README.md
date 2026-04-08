@@ -1,10 +1,6 @@
 # Aligned Multi-View Scripts for Universal Chart-to-Code Generation
 
-This repository is provided for the **double-blind reviewing process of ARR 2026 January Cycle**.
-
-**Notice:**
-* **Anonymity:** The authors' identities and affiliations are strictly hidden.
-* **License:** Redistribution of any data or code contained here is strictly prohibited during the review period.
+This repository is the official codebase for **Aligned Multi-View Scripts for Universal Chart-to-Code Generation**, accepted by ACL 2026 Main Conference. More details will be updated soon.
 
 ---
 
