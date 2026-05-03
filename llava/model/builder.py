@@ -45,11 +45,11 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
     if use_flash_attn:
         kwargs['attn_implementation'] = 'flash_attention_2'
 
-    if 'llava' in model_name.lower():
+    if 'llava' in model_name.lower() or 'charluma' in model_name.lower(): # for charluma implementation
         # Load LLaVA model
-        if 'lora' in model_name.lower() and model_base is None:
+        if 'lora' in model_name.lower() and model_base is None and 'charluma' not in model_name.lower(): # for charluma implementation
             warnings.warn('There is `lora` in model name but no `model_base` is provided. If you are loading a LoRA model, please provide the `model_base` argument. Detailed instruction: https://github.com/haotian-liu/LLaVA#launch-a-model-worker-lora-weights-unmerged.')
-        if 'lora' in model_name.lower() and model_base is not None:
+        if 'lora' in model_name.lower() and model_base is not None and 'charluma' not in model_name.lower():  # for charluma implementation
             from llava.model.language_model.llava_llama import LlavaConfig
             lora_cfg_pretrained = LlavaConfig.from_pretrained(model_path)
             tokenizer = AutoTokenizer.from_pretrained(model_base, use_fast=False)
@@ -112,21 +112,13 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
                     low_cpu_mem_usage=True,
                     **kwargs
                 )
-            elif 'deepseek-coder' in model_name.lower():
+            elif 'charluma' in model_name.lower():  # for charluma implementation
                 tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
-                special_keys = ("shareprivate", "sharebias", "residual", "sulora", "murmoe")
-                if any(k in model_name.lower() for k in special_keys):
-                    model = LlavaDeepseekSPForCausalLM.from_pretrained(
-                        model_path,
-                        low_cpu_mem_usage=True,
-                        **kwargs
-                    )
-                else:
-                    model = LlavaDeepseekForCausalLM.from_pretrained(
-                        model_path,
-                        low_cpu_mem_usage=True,
-                        **kwargs
-                    )
+                model = LlavaDeepseekForCausalLM.from_pretrained(
+                    model_path,
+                    low_cpu_mem_usage=True,
+                    **kwargs
+                )
             else:
                 tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
                 model = LlavaLlamaForCausalLM.from_pretrained(
@@ -158,7 +150,7 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
 
     image_processor = None
 
-    if 'llava' in model_name.lower():
+    if 'llava' in model_name.lower() or 'charluma' in model_name.lower():  # for charluma implementation
         mm_use_im_start_end = getattr(model.config, "mm_use_im_start_end", False)
         mm_use_im_patch_token = getattr(model.config, "mm_use_im_patch_token", True)
         if mm_use_im_patch_token:

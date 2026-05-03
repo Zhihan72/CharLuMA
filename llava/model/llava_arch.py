@@ -94,16 +94,17 @@ class LlavaMetaModel:
 
             def get_w(weights, keyword):
                 return {k.split(keyword + '.')[1]: v for k, v in weights.items() if keyword in k}
-            
-            if self.config.mm_projector_type in ["mlp_moe", "mlp_shareprivate", "mlp_sharebias", "mlp_residual", "mlp_sulora", "mlp_suloralayer", "mlp_suloralang", "mlp_murmoe", "mlp_murmoe_norouter", "mlp_murmoe_onerouter", "mlp_murmoe_tworouter_pyr", "mlp_murmoe_tworouter_pytex", "mlp_murmoe_tworouter_rtex", "mlp_murmoe_N16R8", "mlp_murmoe_N32R8", "mlp_murmoe_N64R32", "mlp_murmoe_tuneA"]:
-                if self.config.mm_projector_type == 'mlp_moe':
-                    num_experts = mm_projector_weights['gate.weight'].size(0) # TBU. Transfer to build_vision_projector()
-                    num_selected = mm_projector_weights.pop('num_selected') # TBU. Transfer to build_vision_projector()
-                self.mm_projector = build_vision_projector(self.config) # TBU. Some naming issue.
-                self.mm_projector.load_state_dict(mm_projector_weights)
+
+            if self.config.mm_projector_type=="mlp_charluma":
+                # for charluma implementation
+                self.mm_projector = build_vision_projector(self.config)
+                try:
+                    self.mm_projector.load_state_dict(mm_projector_weights)
+                except:
+                    self.mm_projector.load_state_dict(get_w(mm_projector_weights, 'mm_projector')) 
             else:
                 self.mm_projector.load_state_dict(get_w(mm_projector_weights, 'mm_projector'))
-            
+
 def unpad_image(tensor, original_size):
     """
     Unpads a PyTorch tensor of a padded and resized image.
@@ -144,14 +145,14 @@ class LlavaMetaForCausalLM(ABC):
     def get_vision_tower(self):
         return self.get_model().get_vision_tower()
 
-    def encode_images(self, images):
+    def encode_images(self, images, lang_type):  # for charluma implementation
         image_features = self.get_model().get_vision_tower()(images)
-        image_features = self.get_model().mm_projector(image_features)
+        image_features = self.get_model().mm_projector(image_features, lang_type)
         return image_features
 
     def prepare_inputs_labels_for_multimodal(
         self, input_ids, position_ids, attention_mask, past_key_values, labels,
-        images, image_sizes=None
+        images, lang_type, image_sizes=None  # for charluma implementation
     ):
         vision_tower = self.get_vision_tower()
         if vision_tower is None or images is None or input_ids.shape[1] == 1:
@@ -161,7 +162,7 @@ class LlavaMetaForCausalLM(ABC):
             if type(images) is list:
                 images = [x.unsqueeze(0) if x.ndim == 3 else x for x in images]
             concat_images = torch.cat([image for image in images], dim=0)
-            image_features = self.encode_images(concat_images)
+            image_features = self.encode_images(concat_images, lang_type)  # for charluma implementation
             split_sizes = [image.shape[0] for image in images]
             image_features = torch.split(image_features, split_sizes, dim=0)
             mm_patch_merge_type = getattr(self.config, 'mm_patch_merge_type', 'flat')
@@ -206,7 +207,7 @@ class LlavaMetaForCausalLM(ABC):
             else:
                 raise ValueError(f"Unexpected mm_patch_merge_type: {self.config.mm_patch_merge_type}")
         else:
-            image_features = self.encode_images(images)
+            image_features = self.encode_images(images, lang_type)  # for charluma implementation
 
         # TODO: image start / end is not implemented here to support pretraining.
         if getattr(self.config, 'tune_mm_mlp_adapter', False) and getattr(self.config, 'mm_use_im_start_end', False):

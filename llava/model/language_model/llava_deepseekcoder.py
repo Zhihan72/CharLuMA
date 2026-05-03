@@ -13,7 +13,7 @@
 #    limitations under the License.
 
 
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, Dict
 
 import torch
 import torch.nn as nn
@@ -67,7 +67,7 @@ class LlavaDeepseekForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         output_hidden_states: Optional[bool] = None,
         images: Optional[torch.FloatTensor] = None,
         image_sizes: Optional[List[List[int]]] = None,
-        lang_type: Optional[List[List[str]]] = None,
+        lang_type: Optional[List[List[str]]] = None,  # for charluma implementation
         return_dict: Optional[bool] = None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
 
@@ -78,7 +78,7 @@ class LlavaDeepseekForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
                 attention_mask,
                 past_key_values,
                 inputs_embeds,
-                labels
+                labels,
             ) = self.prepare_inputs_labels_for_multimodal(
                 input_ids,
                 position_ids,
@@ -86,6 +86,7 @@ class LlavaDeepseekForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
                 past_key_values,
                 labels,
                 images,
+                lang_type,  # for charluma implementation
                 image_sizes
             )
 
@@ -102,12 +103,14 @@ class LlavaDeepseekForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
             return_dict=return_dict
         )
 
+
     @torch.no_grad()
     def generate(
         self,
         inputs: Optional[torch.Tensor] = None,
         images: Optional[torch.Tensor] = None,
         image_sizes: Optional[torch.Tensor] = None,
+        lang_type: Optional[List[List[str]]] = None,  # for charluma implementation
         **kwargs,
     ) -> Union[GenerateOutput, torch.LongTensor]:
         position_ids = kwargs.pop("position_ids", None)
@@ -122,7 +125,7 @@ class LlavaDeepseekForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
                 attention_mask,
                 _,
                 inputs_embeds,
-                _
+                _,
             ) = self.prepare_inputs_labels_for_multimodal(
                 inputs,
                 position_ids,
@@ -130,6 +133,7 @@ class LlavaDeepseekForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
                 None,
                 None,
                 images,
+                lang_type,  # for charluma implementation
                 image_sizes=image_sizes
             )
         else:
@@ -153,7 +157,7 @@ class LlavaDeepseekForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
             inputs['images'] = images
         if image_sizes is not None:
             inputs['image_sizes'] = image_sizes
-        inputs.pop("cache_position")
+        inputs.pop("cache_position") # for chartluma debug. See https://github.com/haotian-liu/LLaVA/issues/1448
         return inputs
 
 AutoConfig.register("llava_deepseekcoder", LlavaConfig)

@@ -102,7 +102,7 @@ class Conversation:
                     ret += message + seps[i % 2]
                 else:
                     ret += ""
-        elif self.sep_style == SeparatorStyle.DeepSeekCoder:
+        elif self.sep_style == SeparatorStyle.DeepSeekCoder: # for charluma implementation
             wrap_user = lambda msg: f"### Instruction:\n{msg}\n### Response:\n"
             wrap_assis = lambda msg: f"{msg}\n<|EOT|>"
             ret = self.system
@@ -388,7 +388,11 @@ Answer the questions.""",
     sep="<|im_end|>",
 )
 
-conv_llava_deepseekcoder = Conversation(
+conv_llava_deepseekcoder = Conversation( # zzh borrow from Chartcoder
+    # system="You are an AI programming assistant, utilizing the DeepSeek Coder model, "
+    #     "developed by DeepSeek Company, and you only answer questions related to computer science. "
+    #     "For politically sensitive questions, security and privacy issues, "
+    #     "and other non-computer science questions, you will refuse to answer.\n",
     system="",
     roles=("USER", "ASSISTANT"),
     version="deepseekcoder",

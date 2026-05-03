@@ -26,7 +26,7 @@ from typing import Any, Union
 
 import torch
 
-from transformers import AutoConfig, LlamaTokenizerFast
+from transformers import AutoConfig, LlamaTokenizerFast  # for charluma implementation
 import transformers
 import tokenizers
 
@@ -40,6 +40,7 @@ from llava.mm_utils import tokenizer_image_token
 
 from PIL import Image
 
+torch.distributed.init_process_group(backend="nccl")
 
 local_rank = None
 
@@ -610,7 +611,7 @@ def preprocess_plain(
 
     return dict(input_ids=input_ids, labels=targets)
 
-def preprocess_deepseekcoder(
+def preprocess_deepseekcoder( # for charluma implementation
     sources,
     tokenizer: transformers.PreTrainedTokenizer,
     has_image: bool = False
@@ -713,7 +714,7 @@ def preprocess(
         return preprocess_v1(sources, tokenizer, has_image=has_image)
     if conversation_lib.default_conversation.version == "mpt":
         return preprocess_mpt(sources, tokenizer, has_image=has_image)
-    if conversation_lib.default_conversation.sep_style == conversation_lib.SeparatorStyle.DeepSeekCoder:
+    if conversation_lib.default_conversation.sep_style == conversation_lib.SeparatorStyle.DeepSeekCoder: # for charluma implementation
         return preprocess_deepseekcoder(sources, tokenizer, has_image=has_image)
     # add end signal and concatenate together
     conversations = []
@@ -754,11 +755,11 @@ class LazySupervisedDataset(Dataset):
 
         rank0_print("Formatting inputs...Skip in lazy mode")
         self.tokenizer = tokenizer
-        
         self.data_args = data_args
         self.list_data_dict = list_data_dict
 
-    def _filter_overlong_prompts(self, example: Dict[str, Any]) -> bool:
+
+    def _filter_overlong_prompts(self, example: Dict[str, Any]) -> bool:  # for charluma implementation
         header = f"{conversation_lib.default_conversation.system}\n\n"
         conversation = _add_speaker_and_signal(header, example["conversations"])
         input_ids = tokenizer_image_token(conversation, self.tokenizer, return_tensors=None) # return_tensors='pt'
@@ -831,6 +832,9 @@ class LazySupervisedDataset(Dataset):
             # image does not exist in the data, but the model is multimodal
             crop_size = self.data_args.image_processor.crop_size
             data_dict['image'] = torch.zeros(3, crop_size['height'], crop_size['width'])
+        
+        data_dict["lang_type"] = self.list_data_dict[i]['id'].split("_")[0]  # for charluma implementation
+
         return data_dict
 
 
@@ -864,6 +868,14 @@ class DataCollatorForSupervisedDataset(object):
                 batch['images'] = torch.stack(images)
             else:
                 batch['images'] = images
+        
+        # for charluma implementation
+        lang_type = [
+            l[0] if isinstance(l, list) else l
+            for l in (instance['lang_type'] for instance in instances)
+        ]
+        assert all(isinstance(l, str) for l in lang_type), f"[DEBUG] Non-string lang_type: {lang_type}"
+        batch['lang_type'] = lang_type
 
         return batch
 
@@ -888,7 +900,7 @@ def train(attn_implementation=None):
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
     local_rank = training_args.local_rank
     compute_dtype = (torch.float16 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32))
-
+    
     bnb_model_from_pretrained_args = {}
     if training_args.bits in [4, 8]:
         from transformers import BitsAndBytesConfig
@@ -918,15 +930,15 @@ def train(attn_implementation=None):
                 cache_dir=training_args.cache_dir,
                 **bnb_model_from_pretrained_args
             )
-        elif 'deepseek-coder' in model_args.model_name_or_path:
-            model = LlavaDeepseekForCausalLM.from_pretrained(
+        elif 'deepseek-coder' in model_args.model_name_or_path:  # for charluma implementation
+            model = LlavaDeepseekSPForCausalLM.from_pretrained(
                 model_args.model_name_or_path,
                 trust_remote_code=True,
                 cache_dir=training_args.cache_dir,
                 attn_implementation=training_args.attn_implementation,
                 torch_dtype=(torch.bfloat16 if training_args.bf16 else None),
                 **bnb_model_from_pretrained_args
-            ) 
+            )
         else:
             model = LlavaLlamaForCausalLM.from_pretrained(
                 model_args.model_name_or_path,
@@ -986,7 +998,7 @@ def train(attn_implementation=None):
             model_max_length=training_args.model_max_length,
             padding_side="right"
         )
-    elif 'deepseek-coder' in model_args.model_name_or_path.lower():
+    elif 'deepseek-coder' in model_args.model_name_or_path.lower():  # for charluma implementation
         tokenizer = LlamaTokenizerFast.from_pretrained(
             model_args.model_name_or_path,
             cache_dir=training_args.cache_dir,
@@ -1043,6 +1055,13 @@ def train(attn_implementation=None):
             model.requires_grad_(False)
             for p in model.get_model().mm_projector.parameters():
                 p.requires_grad = True
+            if hasattr(model.get_model().mm_projector, "mlp_connector"):
+                for p in model.get_model().mm_projector.mlp_connector.parameters():
+                    p.requires_grad = False
+            if hasattr(model.get_model().mm_projector, "A"):
+                # for charluma implementation
+                for p in model.get_model().mm_projector.A.parameters():
+                    p.requires_grad = False
 
         model.config.freeze_mm_mlp_adapter = training_args.freeze_mm_mlp_adapter
         if training_args.freeze_mm_mlp_adapter:
@@ -1070,6 +1089,12 @@ def train(attn_implementation=None):
                 if hasattr(module, 'weight'):
                     if training_args.bf16 and module.weight.dtype == torch.float32:
                         module = module.to(torch.bfloat16)
+    
+    # for charluma implementation
+    print('Printing trainable parameters...')
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            print(name)
 
     data_module = make_supervised_data_module(tokenizer=tokenizer,
                                               data_args=data_args)

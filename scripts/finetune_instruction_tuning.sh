@@ -3,7 +3,7 @@
 PROMPT_VERSION=plain
 MODEL_VERSION="deepseek-coder-1.3b-instruct"
 
-deepspeed  --include localhost:0,1,2,3,4,5,6,7 llava/train/train_mem_shareprivate.py \
+deepspeed  --include localhost:0,1,2,3,4,5,6,7 llava/train/train_mem.py \
     --deepspeed ./scripts_imgcoder/zero2.json \
     --model_name_or_path ./checkpoints/$MODEL_VERSION \
     --version $PROMPT_VERSION \
@@ -11,7 +11,7 @@ deepspeed  --include localhost:0,1,2,3,4,5,6,7 llava/train/train_mem_shareprivat
     --image_folder ./images \
     --vision_tower ./checkpoints/siglip-so400m-patch14-384 \
     --pretrain_mm_mlp_adapter ./checkpoints/ckpt_finetune_warmup_Chart2NCode/mm_projector.bin \
-    --mm_projector_type "mlp_murmoe" \
+    --mm_projector_type "mlp_charluma" \
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \

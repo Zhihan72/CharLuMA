@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import re
 
-from .mlp_murmoe import MLPMuRMoS
+from .mlp_charluma import MLPCharLuMA
 
 class IdentityMap(nn.Module):
     def __init__(self):
@@ -46,8 +46,9 @@ def build_vision_projector(config, delay_load=False, **kwargs):
             modules.append(nn.Linear(config.hidden_size, config.hidden_size))
         return nn.Sequential(*modules)
 
-    if projector_type == 'mlp_murmoe': # for charluma
-        return MLPMuRMoS(config.mm_hidden_size, config.hidden_size)
+    if projector_type == 'mlp_charluma':
+        # for charluma implementation
+        return MLPCharLuMA(config.mm_hidden_size, config.hidden_size)
 
     if projector_type == 'identity':
         return IdentityMap()
