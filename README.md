@@ -7,12 +7,6 @@ This repository is the official codebase for **Aligned Multi-View Scripts for Un
 [![Model 1.3B](https://img.shields.io/badge/%F0%9F%A4%97%20Model-CharLuMA--1.3B-blue)](https://huggingface.co/Zhihan/CharLuMA-1.3B)
 [![Model 6.7B](https://img.shields.io/badge/%F0%9F%A4%97%20Model-CharLuMA--6.7B-blue)](https://huggingface.co/Zhihan/CharLuMA-6.7B)
 
-- **Paper:** https://arxiv.org/abs/2604.24559
-- **Dataset (Chart2NCode):** https://huggingface.co/datasets/Zhihan/Chart2NCode
-- **Model checkpoints:**
-  - CharLuMA-1.3B: https://huggingface.co/Zhihan/CharLuMA-1.3B
-  - CharLuMA-6.7B: https://huggingface.co/Zhihan/CharLuMA-6.7B
-
 ---
 
 ## Introduction
@@ -20,7 +14,7 @@ This repository is the official codebase for **Aligned Multi-View Scripts for Un
 A single chart can be reproduced by many *equivalent* plotting scripts — Python with `matplotlib`, R with `ggplot2`, LaTeX with `pgfplots`, and so on. Each rendering path is a different *syntactic view* of the same underlying *visual semantics* (title, axes, marks, colors, layout). Existing chart-to-code work overwhelmingly targets Python alone, leaving this cross-language alignment as an unused, abundant source of supervision.
 
 <p align="center">
-  <img src="assets/overview_arr.png" alt="A chart can be reproduced by aligned scripts in Python, R, and LaTeX, all sharing the same visual semantics." width="78%">
+  <img src="assets/overview_arr.png" alt="A chart can be reproduced by aligned scripts in Python, R, and LaTeX, all sharing the same visual semantics." width="65%">
 </p>
 
 We exploit it on two fronts:
@@ -31,6 +25,21 @@ We exploit it on two fronts:
 This repository releases:
 - The automatic annotation pipeline (`dataset_construction/`) and a random subset of Chart2NCode (`dataset_construction/sample_Chart2NCode/`); the full 176K dataset is hosted on Hugging Face.
 - Model architecture code (`llava/`) and training scripts (`scripts/`); pretrained CharLuMA-1.3B and CharLuMA-6.7B checkpoints are hosted on Hugging Face.
+
+## Install Environment
+
+We develop on Python 3.12 with PyTorch 2.6 + CUDA 12.4. To reproduce our environment:
+
+```bash
+conda create -n charluma python=3.12 -y
+conda activate charluma
+
+# 1. install torch first, matching your CUDA driver (we use cu124)
+pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu124
+
+# 2. install the rest of the pinned stack
+pip install -r requirements.txt
+```
 
 ## Chart2NCode
 
@@ -64,7 +73,7 @@ Note: this release currently includes the templates and template-filling scripts
 ## CharLuMA
 
 <p align="center">
-  <img src="assets/model_archi_arr.png" alt="CharLuMA architecture: a frozen vision encoder feeds a low-rank projector into a shared subspace pool; a language-guided router (per target language) activates the top-r subspaces and combines them with a linear MLP path before passing tokens to the language model." width="68%">
+  <img src="assets/model_archi_arr.png" alt="CharLuMA architecture: a frozen vision encoder feeds a low-rank projector into a shared subspace pool; a language-guided router (per target language) activates the top-r subspaces and combines them with a linear MLP path before passing tokens to the language model." width="65%">
 </p>
 
 CharLuMA augments a LLaVA-style projector with a *subspace pool* of low-rank components and a per-language router. At inference, the target language (Python / R / LaTeX) selects a top-r subset of subspaces, which are combined with a shared linear MLP path before flowing into the language model. The vision encoder and the low-rank projector remain frozen during instruction tuning; only the router, subspace pool, MLP, and LM are updated.
@@ -125,4 +134,4 @@ If you find Chart2NCode or CharLuMA useful, please cite:
 
 ## Acknowledgement
 
-The model architecture and training scripts are built upon [LLaVA](https://github.com/haotian-liu/LLaVA). We thank the authors for their contributions to the open-source community.
+The model architecture and training scripts are built upon [LLaVA](https://github.com/haotian-liu/LLaVA). We also draw on [ChartMoE](https://github.com/DataArcTech/ChartMoE) and [ChartCoder](https://github.com/thunlp/ChartCoder). We thank the authors of these projects for their contributions to the open-source community.
